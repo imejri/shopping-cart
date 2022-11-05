@@ -17,7 +17,20 @@ stages {
                         --follow --wait -n ${APP_NAMESPACE}
                     """ 
             }
-        } 
+        }
+
+        stage('Security Scan') {
+            steps {
+                sh """
+                oc process -f kubefiles/security-scan-template.yml \
+                -n ${APP_NAMESPACE} \
+                -p PROJECT_NAME=${APP_NAMESPACE} \
+                -p CVE_CODE=CVE-2020-14583 \
+                | oc replace --force -n ${APP_NAMESPACE} -f -
+                """
+                sh "! ../tools/check-job-state.sh security-scans-trivy ${APP_NAMESPACE}"
+            }
+        }
 
         stage('Deploy') {
             steps {
